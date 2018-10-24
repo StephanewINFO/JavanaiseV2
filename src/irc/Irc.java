@@ -30,7 +30,7 @@ public class Irc implements IFoo{
      * application
   *
      */
-    public static void main(String argv[]) {
+   public static void main(String argv[]) {
         try {
 
             // initialize JVN
@@ -64,13 +64,7 @@ public class Irc implements IFoo{
    *
      */
     public Irc(JvnObject jo) {
-        
-   
-         /*  IFoo proxy =  (IFoo) Proxy.newProxyInstance(
-                JvnInvocationHandler.class.getClassLoader(),
-                new Class[] {IFoo.class},
-                new JvnInvocationHandler(this));
-        */
+
 
          if (instance == null) {   
    instance = (IFoo) TestingProxy.getNewProxy(this,

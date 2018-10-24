@@ -7,6 +7,7 @@
 
 package jvn;
 import java.io.Serializable;
+import java.rmi.RemoteException;
 
 /**
  * Local interface of a JVN server  (used by the applications).
@@ -69,6 +70,10 @@ public interface JvnLocalServer {
     **/
    public  void jvnTerminate()
    throws jvn.JvnException; 
+   
+ 
 }
+
+
 
  

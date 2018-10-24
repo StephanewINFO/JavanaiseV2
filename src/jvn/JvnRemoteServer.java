@@ -44,6 +44,9 @@ public interface JvnRemoteServer extends Remote {
 	 throws java.rmi.RemoteException,jvn.JvnException;
 
     public void showMessage(String message) throws RemoteException;
+    
+    public int getIdServerLocal() throws RemoteException;
+
 }
 
 

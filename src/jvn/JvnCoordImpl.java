@@ -12,6 +12,7 @@ import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 import java.io.Serializable;
 import java.rmi.RemoteException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -26,6 +27,7 @@ public class JvnCoordImpl
     private HashMap<Integer, JvnObject> jvnObjects;
     private HashMap<Integer, HashSet<JvnRemoteServer>> readers;
     private HashMap<Integer, JvnRemoteServer> writer;
+   ArrayList<JvnRemoteServer> listServersLocaux;
 
     /**
      * Default constructor
@@ -38,6 +40,7 @@ public class JvnCoordImpl
         jvnObjects = new HashMap();
         readers = new HashMap();
         writer = new HashMap();
+        listServersLocaux= new ArrayList<>();
     }
 
     /**
@@ -174,7 +177,7 @@ public class JvnCoordImpl
             throws java.rmi.RemoteException, JvnException {
     }
 
-    //uego llamo al metodo en la excepton cuando el cordinador no tiene conexion
+  /*  //cuego llamo al metodo en la excepton cuando el cordinador no tiene conexion
     public synchronized void jvnPanneCoordinateurReaders() throws RemoteException, JvnException {
         JvnRemoteServer jsr;
         for (Map.Entry<Integer, HashSet<JvnRemoteServer>> entry : readers.entrySet()) {
@@ -201,16 +204,21 @@ public class JvnCoordImpl
         }
   
     }
+*/
+    @Override
+    public void jvnConnectServerLocal(JvnRemoteServer js) throws RemoteException, JvnException {
+        listServersLocaux.add(js);
+        //System.out.println("Serveur connecte: "+js.getIdServerLocal()+ "Nombre de Serveurs Locaux connecte: "+ listServersLocaux.size());
+        System.out.println("Nombre de Serveurs Locaux connecte: "+listServersLocaux.size());
+    }
 
-
-
-
+   
+    
 public static void main(String[] args) {
         JvnRemoteCoord h_stub;
         try {
             h_stub = new JvnCoordImpl();
-
-            Registry registry = LocateRegistry.createRegistry(4500);
+            Registry registry = LocateRegistry.createRegistry(4300);
             registry.rebind("Coord", h_stub);
             System.out.println("Server ready");
         } catch (Exception e) {
@@ -219,4 +227,11 @@ public static void main(String[] args) {
         }
 
     }
+
+
+
+
+
+    
+
 }

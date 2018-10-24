@@ -14,6 +14,7 @@ import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.util.HashMap;
+import java.util.Random;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -24,7 +25,8 @@ public class JvnServerImpl
     // A JVN server is managed as a singleton 
     private HashMap<Integer, JvnObject> mapJvnObject;
     private static JvnServerImpl js = null;
-    private JvnRemoteCoord jrc;
+    private static JvnRemoteCoord jrc;
+    private static  int idServerLocal;
 
     /**
      * Default constructor
@@ -35,18 +37,25 @@ public class JvnServerImpl
     JvnServerImpl() throws Exception {
         super();
         mapJvnObject = new HashMap<Integer, JvnObject>();
+        Random random = new Random();
+        idServerLocal = random.nextInt(Integer.MAX_VALUE);
         try {
 
             Registry registry = LocateRegistry.getRegistry("localhost", 4300);
             jrc = (JvnRemoteCoord) registry.lookup("Coord");
-            //System.err.println("ServerLocal connected: " + jrc.hashCode());
-
+            jrc.jvnConnectServerLocal(js);
+          
         } catch (Exception e) {
             System.err.println("Error on client JvnServerImpl(): " + e);
             e.printStackTrace();
         }
     }
 
+
+
+ 
+
+    
     /**
      * Static method allowing an application to get a reference to a JVN server
      * instance
@@ -54,18 +63,26 @@ public class JvnServerImpl
      * @throws JvnException
     *
      */
-    public static JvnServerImpl jvnGetServer() {
+    public static JvnServerImpl jvnGetServer()  {
         if (js == null) {
             try {
                 js = new JvnServerImpl();
-                System.err.println("ServerLocal jvnGetServer: " + js);
+               // js.showMessage(""+idServerLocal);
+                System.out.println("Server Local Connect id: " + js.getIdServerLocal());
+                
+              
             } catch (Exception e) {
                 return null;
             }
         }
+        
         return js;
     }
 
+   
+    
+   
+    
     /**
      * The JVN service is not used anymore
      *
@@ -241,5 +258,14 @@ public class JvnServerImpl
   public void showMessage(String message) throws RemoteException {
         System.out.println(message);
     }
+
+    @Override
+    public int getIdServerLocal() throws RemoteException {
+       return idServerLocal;
+    }
+
+  
+
+
 
 }
