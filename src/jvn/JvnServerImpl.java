@@ -43,7 +43,7 @@ public class JvnServerImpl
 
             Registry registry = LocateRegistry.getRegistry("localhost", 4300);
             jrc = (JvnRemoteCoord) registry.lookup("Coord");
-            jrc.jvnConnectServerLocal(js);
+            
           
         } catch (Exception e) {
             System.err.println("Error on client JvnServerImpl(): " + e);
@@ -67,8 +67,9 @@ public class JvnServerImpl
         if (js == null) {
             try {
                 js = new JvnServerImpl();
+                jrc.jvnConnectServerRemote(js);
                // js.showMessage(""+idServerLocal);
-                System.out.println("Server Local Connect id: " + js.getIdServerLocal());
+                System.out.println("Server Local Connect id: " + js.getIdServerRemote());
                 
               
             } catch (Exception e) {
@@ -260,8 +261,13 @@ public class JvnServerImpl
     }
 
     @Override
-    public int getIdServerLocal() throws RemoteException {
+    public int getIdServerRemote() throws RemoteException {
        return idServerLocal;
+    }
+
+    @Override
+    public void coordReconect(JvnRemoteCoord coord) throws RemoteException {
+        jrc=coord;
     }
 
   

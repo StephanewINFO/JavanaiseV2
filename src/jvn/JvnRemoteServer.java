@@ -15,7 +15,7 @@ import java.io.*;
  * Remote interface of a JVN server (used by a remote JvnCoord)
  */
 
-public interface JvnRemoteServer extends Remote {
+public interface JvnRemoteServer extends Remote, Serializable {
 	    
 	/**
 	* Invalidate the Read lock of a JVN object 
@@ -45,7 +45,9 @@ public interface JvnRemoteServer extends Remote {
 
     public void showMessage(String message) throws RemoteException;
     
-    public int getIdServerLocal() throws RemoteException;
+    public int getIdServerRemote() throws RemoteException;
+    
+    public void coordReconect(JvnRemoteCoord coord)throws RemoteException;
 
 }
 

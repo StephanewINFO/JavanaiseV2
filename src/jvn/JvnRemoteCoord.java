@@ -9,6 +9,9 @@ package jvn;
 
 import java.rmi.*;
 import java.io.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
 
 
 /**
@@ -73,8 +76,17 @@ public interface JvnRemoteCoord extends Remote {
   public void jvnTerminate(JvnRemoteServer js)
 	 throws java.rmi.RemoteException, JvnException;
 
-  public void jvnConnectServerLocal(JvnRemoteServer js)
+  public void jvnConnectServerRemote(JvnRemoteServer js)
 	 throws java.rmi.RemoteException, JvnException;
+  
+  public File stockJvnConnectServerRemote(ArrayList jsStock)
+          throws java.rmi.RemoteException, JvnException;
+  
+  
+  public void recuperateJvnConnectServerRemote(String nomFichier) throws RemoteException;
+  
+  public File stockJvnReadersWriter(HashMap map, String nomFichier)throws java.rmi.RemoteException, JvnException;
+  
   
   
 }

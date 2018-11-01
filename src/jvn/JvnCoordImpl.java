@@ -7,16 +7,30 @@
  */
 package jvn;
 
+import java.io.BufferedWriter;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 import java.io.Serializable;
 import java.rmi.RemoteException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class JvnCoordImpl
         extends UnicastRemoteObject
@@ -27,7 +41,7 @@ public class JvnCoordImpl
     private HashMap<Integer, JvnObject> jvnObjects;
     private HashMap<Integer, HashSet<JvnRemoteServer>> readers;
     private HashMap<Integer, JvnRemoteServer> writer;
-   ArrayList<JvnRemoteServer> listServersLocaux;
+    ArrayList<JvnRemoteServer> listServersLocaux;
 
     /**
      * Default constructor
@@ -40,7 +54,7 @@ public class JvnCoordImpl
         jvnObjects = new HashMap();
         readers = new HashMap();
         writer = new HashMap();
-        listServersLocaux= new ArrayList<>();
+        listServersLocaux = new ArrayList<>();
     }
 
     /**
@@ -120,7 +134,7 @@ public class JvnCoordImpl
             System.err.println("Error on coordinator at jvnLockRead():" + e);
             e.printStackTrace();
         }
- 
+
         return this.jvnObjects.get(joi).jvnGetObjectState();
     }
 
@@ -162,7 +176,7 @@ public class JvnCoordImpl
             System.err.println("Error on server at jvnLockWrite():" + e);
             e.printStackTrace();
         }
-        
+
         return this.jvnObjects.get(joi).jvnGetObjectState();
     }
 
@@ -177,7 +191,7 @@ public class JvnCoordImpl
             throws java.rmi.RemoteException, JvnException {
     }
 
-  /*  //cuego llamo al metodo en la excepton cuando el cordinador no tiene conexion
+    /*  //cuego llamo al metodo en la excepton cuando el cordinador no tiene conexion
     public synchronized void jvnPanneCoordinateurReaders() throws RemoteException, JvnException {
         JvnRemoteServer jsr;
         for (Map.Entry<Integer, HashSet<JvnRemoteServer>> entry : readers.entrySet()) {
@@ -204,17 +218,84 @@ public class JvnCoordImpl
         }
   
     }
-*/
+     */
     @Override
-    public void jvnConnectServerLocal(JvnRemoteServer js) throws RemoteException, JvnException {
+    public void jvnConnectServerRemote(JvnRemoteServer js) throws RemoteException, JvnException {
+
         listServersLocaux.add(js);
+
         //System.out.println("Serveur connecte: "+js.getIdServerLocal()+ "Nombre de Serveurs Locaux connecte: "+ listServersLocaux.size());
-        System.out.println("Nombre de Serveurs Locaux connecte: "+listServersLocaux.size());
+        System.out.println("Nombre de Serveurs Locaux connecte: " + listServersLocaux.size());
+
+       File fichierStockServeurs = stockJvnConnectServerRemote(listServersLocaux);
+       
+       
+        if (fichierStockServeurs.exists()) {
+            System.out.println("existe archivo" + fichierStockServeurs.getName());
+            recuperateJvnConnectServerRemote(fichierStockServeurs.getName());
+
+        } else {
+            System.out.println("no existe");
+        }
+
     }
 
-   
-    
-public static void main(String[] args) {
+    @Override
+    public File stockJvnConnectServerRemote(ArrayList jsStock) throws RemoteException, JvnException {
+        File file = null;
+            
+        String nameFile="stockServeurs.txt";
+        
+        try {
+            
+            file = new File(nameFile);
+            FileOutputStream fos = null;
+
+            fos = new FileOutputStream(file, false);
+            ObjectOutputStream oos = new ObjectOutputStream(fos);
+
+            /* if (!file.exists()) {
+                
+                file.createNewFile();        
+            }*/
+            oos.writeObject(jsStock);
+            fos.flush();
+
+        } catch (FileNotFoundException ex) {
+            Logger.getLogger(JvnCoordImpl.class.getName()).log(Level.SEVERE, null, ex);
+
+        } catch (IOException ex) {
+            Logger.getLogger(JvnCoordImpl.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        return file;
+
+    }
+
+    @Override
+    public void recuperateJvnConnectServerRemote(String nomFichier) throws RemoteException {
+        JvnRemoteServer js;
+        try {
+            FileInputStream streamIn = new FileInputStream(nomFichier);
+            ObjectInputStream objectinputstream = new ObjectInputStream(streamIn);
+            ArrayList arrayJvnServerRemote = (ArrayList) objectinputstream.readObject();
+            System.out.println("servidores conectados" + arrayJvnServerRemote.size());
+            listServersLocaux=arrayJvnServerRemote;
+            for (int i = 0; i < arrayJvnServerRemote.size(); i++) {
+                
+                js = (JvnRemoteServer) arrayJvnServerRemote.get(i);
+                js.coordReconect(this);
+                System.out.println("Coordinateur Reconect");
+                System.out.println(js.getIdServerRemote());
+
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+    }
+
+    public static void main(String[] args) {
         JvnRemoteCoord h_stub;
         try {
             h_stub = new JvnCoordImpl();
@@ -228,10 +309,33 @@ public static void main(String[] args) {
 
     }
 
+    @Override
+    public File stockJvnReadersWriter(HashMap map, String nomFichier) throws RemoteException, JvnException {
+        File file = null;
+            
+        
+        try {
+            
+            file = new File(nomFichier);
+            FileOutputStream fos = null;
 
+            fos = new FileOutputStream(file, false);
+            ObjectOutputStream oos = new ObjectOutputStream(fos);
 
+            /* if (!file.exists()) {
+                
+                file.createNewFile();        
+            }*/
+            oos.writeObject(map);
+            fos.flush();
 
+        } catch (FileNotFoundException ex) {
+            Logger.getLogger(JvnCoordImpl.class.getName()).log(Level.SEVERE, null, ex);
 
-    
+        } catch (IOException ex) {
+            Logger.getLogger(JvnCoordImpl.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        return file; 
+    }
 
 }
