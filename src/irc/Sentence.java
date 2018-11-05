@@ -8,18 +8,24 @@
 
 package irc;
 
-public class Sentence implements java.io.Serializable {
+import Annotation.AnnotationReader;
+import Annotation.AnnotationWriter;
+
+public class Sentence implements java.io.Serializable, IFoo {
 	String 		data;
   
 	public Sentence() {
-		data = new String("");
+		data = "";
 	}
-	
+	@AnnotationWriter
 	public void write(String text) {
 		data = text;
 	}
+        @AnnotationReader
 	public String read() {
 		return data;	
 	}
-	
+
+    
+  
 }

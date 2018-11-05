@@ -5,13 +5,19 @@
  */
 package irc;
 
+import Annotation.AnnotationReader;
+import Annotation.AnnotationWriter;
+
 /**
  *
  * @author stephanie
  */
 public interface IFoo {
     
-    public  void x();
-     public void y();
+    @AnnotationReader
+    public String read();
+    
+    @AnnotationWriter
+     public void write(String text);
     
 }

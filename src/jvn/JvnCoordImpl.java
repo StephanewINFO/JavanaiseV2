@@ -22,13 +22,16 @@ import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 import java.io.Serializable;
+import java.rmi.ConnectException;
 import java.rmi.RemoteException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Scanner;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -41,7 +44,7 @@ public class JvnCoordImpl
     private HashMap<Integer, JvnObject> jvnObjects;
     private HashMap<Integer, HashSet<JvnRemoteServer>> readers;
     private HashMap<Integer, JvnRemoteServer> writer;
-    ArrayList<JvnRemoteServer> listServersLocaux;
+    ArrayList<JvnRemoteServer> listServersRemote;
     
 
     /**
@@ -55,33 +58,15 @@ public class JvnCoordImpl
         jvnObjects = new HashMap();
         readers = new HashMap();
         writer = new HashMap();
-        listServersLocaux = new ArrayList<>();
+        listServersRemote = new ArrayList<>();
         
+                 Registry registry = LocateRegistry.createRegistry(4300);
+            registry.rebind("Coord", this);
+            System.out.println("Server ready");   
 
-        File stockServeurs = new File("stockServeurs.txt");
-        File stockServeursReaders = new File("stockServeursReaders.txt");
-        File stockServeurWriter = new File("stockServeurWriter.txt");
-        File stockObjName = new File("objNames.txt");
-        File stockJvnObject = new File("jvnObjects.txt");
-
-        
-        
-        if (stockServeurs.exists()) {
-
-            recuperateJvnConnectServerRemote(stockServeurs.getName());
-            recuperateJvnConnectReadersWriters(stockServeursReaders.getName(), stockServeurWriter.getName());
-            recuperateJvnObjects(stockObjName.getName(), stockJvnObject.getName());
-
-            stockServeurs.delete();
-            stockServeursReaders.delete();
-            stockServeurWriter.delete();
-            stockObjName.delete();
-            stockJvnObject.delete();
-            
-        } else {
-            System.out.println("n'existe pas stock de donnees");
-        }
-
+     effacerStock();
+     
+     
     }
 
     /**
@@ -130,7 +115,12 @@ public class JvnCoordImpl
             throws java.rmi.RemoteException, jvn.JvnException {
 
         JvnObject object = null;
-
+if (!listServersRemote.contains(js)){
+    listServersRemote.add(js);
+    stockJvnServerRemoteObjet(listServersRemote, "stockServeurs.txt");
+    System.out.println("Nombre de Serveurs Locaux connecte: " + listServersRemote.size());
+}
+        
         if (objectNames.containsKey(jon)) {
             object = this.jvnObjects.get(this.objectNames.get(jon));
         }
@@ -149,23 +139,28 @@ public class JvnCoordImpl
     public synchronized Serializable jvnLockRead(int joi, JvnRemoteServer js)
             throws java.rmi.RemoteException, JvnException {
 
-        try {
+        
             if (writer.get(joi) != null) {
                 JvnRemoteServer writerJvnServer = writer.get(joi);
                 //objectUpdate = writerJvnServer.jvnInvalidateWriterForReader(joi);
-                this.jvnObjects.get(joi).jvnSetObjectState(writerJvnServer.jvnInvalidateWriterForReader(joi));
+                
+                try{
+                    this.jvnObjects.get(joi).jvnSetObjectState(writerJvnServer.jvnInvalidateWriterForReader(joi));
+                }catch(ConnectException ce){
+                  writer.put(joi, null);
+                  listServersRemote.remove(writerJvnServer);
+                }
+                
                 stockJvnServerRemoteObjet(jvnObjects, "jvnObjects.txt");
                 writer.put(joi, null);
+                stockJvnServerRemoteObjet(writer, "stockServeurWriter.txt");
                 readers.get(joi).add(writerJvnServer);
-// call stockJvnServerRemote??
-            }
+                stockJvnServerRemoteObjet(readers, "stockServeursReaders.txt");
+
+                }
             readers.get(joi).add(js);
             stockJvnServerRemoteObjet(readers, "stockServeursReaders.txt");
-        } catch (Exception e) {
-            //Caso invalidate writer for reader con el JvnServer sin conexion
-            System.err.println("Error on coordinator at jvnLockRead():" + e);
-            e.printStackTrace();
-        }
+        
         
         return this.jvnObjects.get(joi).jvnGetObjectState();
     }
@@ -181,12 +176,16 @@ public class JvnCoordImpl
      */
     public synchronized Serializable jvnLockWrite(int joi, JvnRemoteServer js)
             throws java.rmi.RemoteException, JvnException {
-        try {
+       
             if (writer.containsKey(joi)) {
                 if (writer.get(joi) != null) {
                     JvnRemoteServer writerJvnServer = writer.get(joi);
                     //objectUpdate = writerJvnServer.jvnInvalidateWriter(joi);
+                    try{
                     this.jvnObjects.get(joi).jvnSetObjectState(writerJvnServer.jvnInvalidateWriter(joi));
+                    }catch(ConnectException ce){
+                        listServersRemote.remove(writerJvnServer);
+                    }
                     stockJvnServerRemoteObjet(jvnObjects, "jvnObjects.txt");
                     writer.put(joi, null);
                     stockJvnServerRemoteObjet(writer, "stockServeurWriter.txt");
@@ -194,8 +193,11 @@ public class JvnCoordImpl
                 } else {
                     if (!(readers.get(joi).isEmpty())) {
                         for (JvnRemoteServer s : readers.get(joi)) {
+                            try{
                             s.jvnInvalidateReader(joi);
-
+                            }catch(ConnectException ce){
+                                
+                            }
                         }
                         readers.get(joi).clear();
                         stockJvnServerRemoteObjet(readers, "stockServeursReaders.txt");
@@ -204,13 +206,8 @@ public class JvnCoordImpl
             }
             writer.put(joi, js);
             stockJvnServerRemoteObjet(writer, "stockServeurWriter.txt");
-            Thread.sleep(5000);
-        } catch (Exception e) {
-
-            //caso invalide write/reader servidor local sin conexion
-            System.err.println("Error on server at jvnLockWrite():" + e);
-            e.printStackTrace();
-        }
+           // Thread.sleep(5000);
+     
         
         return this.jvnObjects.get(joi).jvnGetObjectState();
     }
@@ -227,7 +224,8 @@ public class JvnCoordImpl
             throws java.rmi.RemoteException, JvnException {
         HashSet jvnRemoteServer;
 
-        listServersLocaux.remove(js);
+        listServersRemote.remove(js);
+        System.out.println("Servidores conectados"+listServersRemote.size());
 
         for (Map.Entry<Integer, HashSet<JvnRemoteServer>> entry : readers.entrySet()) {
             jvnRemoteServer = entry.getValue();
@@ -247,15 +245,7 @@ public class JvnCoordImpl
         // y actualizar el objeto -> ??
     }
 
-    @Override
-    public void jvnConnectServerRemote(JvnRemoteServer js) throws RemoteException, JvnException {
 
-        listServersLocaux.add(js);
-        //System.out.println("Serveur connecte: "+js.getIdServerLocal()+ "Nombre de Serveurs Locaux connecte: "+ listServersLocaux.size());
-        System.out.println("Nombre de Serveurs Locaux connecte: " + listServersLocaux.size());
-        stockJvnServerRemoteObjet(listServersLocaux, "stockServeurs.txt");
-
-    }
 
     @Override
     public File stockJvnServerRemoteObjet(Serializable jsStock, String nameFile) throws RemoteException, JvnException {
@@ -294,13 +284,17 @@ public class JvnCoordImpl
             ObjectInputStream objectinputstream = new ObjectInputStream(streamIn);
             ArrayList arrayJvnServerRemote = (ArrayList) objectinputstream.readObject();
             System.out.println("servidores conectados" + arrayJvnServerRemote.size());
-            listServersLocaux = arrayJvnServerRemote;
+            listServersRemote = arrayJvnServerRemote;
             for (int i = 0; i < arrayJvnServerRemote.size(); i++) {
 
                 js = (JvnRemoteServer) arrayJvnServerRemote.get(i);
+                try{
                 js.coordReconect(this);
+            }catch(ConnectException ce){
+                    jvnTerminate(js);
+            }
                 System.out.println("Coordinateur Reconect");
-                System.out.println(js.getIdServerRemote());
+               
             }
 
         } catch (Exception e) {
@@ -311,42 +305,88 @@ public class JvnCoordImpl
 
     public void recuperateJvnConnectReadersWriters(String nomFichierReader, String nomFichierWriter) throws RemoteException {
 
+        
+            FileInputStream streamInReaders = null;
         try {
-            FileInputStream streamInReaders = new FileInputStream(nomFichierReader);
+            streamInReaders = new FileInputStream(nomFichierReader);
             ObjectInputStream objectinputstreamReaders = new ObjectInputStream(streamInReaders);
             HashMap JvnServeursReaders = (HashMap) objectinputstreamReaders.readObject();
             readers = JvnServeursReaders;
-            
-
             FileInputStream streamInWriter = new FileInputStream(nomFichierWriter);
             ObjectInputStream objectinputstreamWriter = new ObjectInputStream(streamInWriter);
             HashMap JvnServeurWriter = (HashMap) objectinputstreamWriter.readObject();
             writer = JvnServeurWriter;
+        } catch (FileNotFoundException ex) {
+            System.out.println(ex.getMessage());
+        } catch (IOException ex) {
+            Logger.getLogger(JvnCoordImpl.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (ClassNotFoundException ex) {
+            Logger.getLogger(JvnCoordImpl.class.getName()).log(Level.SEVERE, null, ex);
+        } 
             
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
     }
 
     public void recuperateJvnObjects(String nomFichierObjName, String nomFichierJvnObject) throws RemoteException {
 
+        
+            FileInputStream streamInReaders = null;
         try {
-            FileInputStream streamInReaders = new FileInputStream(nomFichierObjName);
+            streamInReaders = new FileInputStream(nomFichierObjName);
             ObjectInputStream objectinputstreamReaders = new ObjectInputStream(streamInReaders);
             HashMap JvnObjectNames = (HashMap) objectinputstreamReaders.readObject();
             objectNames = JvnObjectNames;
-  
-
             FileInputStream streamInWriter = new FileInputStream(nomFichierJvnObject);
             ObjectInputStream objectinputstreamWriter = new ObjectInputStream(streamInWriter);
             HashMap jvnObjectsRecup = (HashMap) objectinputstreamWriter.readObject();
             jvnObjects = jvnObjectsRecup;
-          
+            this.id=Collections.max(jvnObjects.keySet());
+        } catch (FileNotFoundException ex) {
+            System.out.println(ex.getMessage());
+        } catch (IOException ex) {
+            Logger.getLogger(JvnCoordImpl.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (ClassNotFoundException ex) {
+            Logger.getLogger(JvnCoordImpl.class.getName()).log(Level.SEVERE, null, ex);
+        }
+      
+    }
+    
 
-        } catch (Exception e) {
-            e.printStackTrace();
+    
+    private void effacerStock () throws RemoteException{
+        
+        
+        File stockServeurs = new File("stockServeurs.txt");
+        File stockServeursReaders = new File("stockServeursReaders.txt");
+        File stockServeurWriter = new File("stockServeurWriter.txt");
+        File stockObjName = new File("objNames.txt");
+        File stockJvnObject = new File("jvnObjects.txt");
+
+        if (stockServeurs.exists()) {
+
+            recuperateJvnConnectServerRemote(stockServeurs.getName());
+            recuperateJvnConnectReadersWriters(stockServeursReaders.getName(), stockServeurWriter.getName());
+            recuperateJvnObjects(stockObjName.getName(), stockJvnObject.getName());
+            
+
+            Scanner sc = new Scanner(System.in);
+            String terminate="";
+            
+            while(!(terminate.equals("q"))){
+                System.out.println("Terminer?");
+                terminate=sc.nextLine();
+                
+            }
+            
+            stockServeurs.delete();
+            stockServeursReaders.delete();
+            stockServeurWriter.delete();
+            stockObjName.delete();
+            stockJvnObject.delete();
+            System.out.println("Fichiers stock effaces");
+            System.exit(0);
+
+        } else {
+            System.out.println("n'existe pas stock de donnees");
         }
 
     }
@@ -355,9 +395,10 @@ public class JvnCoordImpl
         JvnRemoteCoord h_stub;
         try {
             h_stub = new JvnCoordImpl();
-            Registry registry = LocateRegistry.createRegistry(4300);
-            registry.rebind("Coord", h_stub);
-            System.out.println("Server ready");
+
+            
+   
+            
 
         } catch (Exception e) {
             System.err.println("Error on server :" + e);

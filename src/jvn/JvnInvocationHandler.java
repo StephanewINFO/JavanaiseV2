@@ -13,18 +13,49 @@ import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import Annotation.*;
+import java.io.Serializable;
+import java.lang.reflect.Proxy;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  *
  * @author stephanie
  */
 public class JvnInvocationHandler implements InvocationHandler{
-private Object obj;
+private JvnObject obj;
 
 
-public JvnInvocationHandler(Object obj){
+public JvnInvocationHandler(JvnObject obj){
     this.obj=obj;
 }
+
+
+ public static Object newInstance(Serializable object) {
+     JvnObject jo = null;
+    try {
+        JvnServerImpl js = JvnServerImpl.jvnGetServer();
+        
+        // look up the IRC object in the JVN server
+        // if not found, create it, and register it in the JVN server
+        jo = js.jvnLookupObject("IRC");
+        
+        if (jo == null) {
+            jo = js.jvnCreateObject(object);
+            // after creation, I have a write lock on the object
+            js.jvnRegisterObject("IRC", jo);
+        }
+        
+        
+
+    } catch (JvnException ex) {
+        Logger.getLogger(JvnInvocationHandler.class.getName()).log(Level.SEVERE, null, ex);
+    }
+    return java.lang.reflect.Proxy.newProxyInstance(
+            object.getClass().getClassLoader(),
+            object.getClass().getInterfaces(),
+            new JvnInvocationHandler(jo));
+ }
 
 
 @Override
@@ -32,29 +63,31 @@ public Object invoke(Object proxy, Method method, Object[] args)
         throws Throwable
     {
         
-       Method m = obj.getClass().getMethod(method.getName(), method.getParameterTypes());
-  if (m.isAnnotationPresent(AnnotationReader.class)) {
-      
-           ((Irc)obj).sentence.jvnLockRead();
-            String s = ((Sentence) (((Irc)obj).sentence.jvnGetObjectState())).read();
-            ((Irc)obj).sentence.jvnUnLock();
-            ((Irc)obj).data.setText(s);
-            ((Irc)obj).text.append(s + "\n");
+        Object res=null;
 
- //  System.out.println("\tIn the annotation processor Reader");   
+       
+  if (method.isAnnotationPresent(AnnotationReader.class)) {
+      
+      
+            obj.jvnLockRead();
+            res=method.invoke(obj.jvnGetObjectState(), args);
+            obj.jvnUnLock();
+
+
   } 
+
+  else if (method.isAnnotationPresent(AnnotationWriter.class)){ 
+        System.out.println("wrote avant");
+            obj.jvnLockWrite();
+            System.out.println("locked write");
+            res=method.invoke(obj.jvnGetObjectState(), args);
+            System.out.println("finished write");
+            obj.jvnUnLock();
   
-  else if (m.isAnnotationPresent(AnnotationWriter.class)){
-  
-            String s = ((Irc)obj).data.getText();
-            ((Irc)obj).sentence.jvnLockWrite();
-            ((Sentence) (((Irc)obj).sentence.jvnGetObjectState())).write(s);
-            ((Irc)obj).sentence.jvnUnLock();
-      
- //System.out.println("\tIn the annotation processor Writer");      
-      
   }
-    return method.invoke(obj, args);
+  
+
+    return res;
 
 }
 }

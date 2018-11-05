@@ -20,29 +20,26 @@ import java.rmi.RemoteException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class Irc implements IFoo{
+public class Irc {
 
     public TextArea text;
     public TextField data;
     Frame frame;
-    public JvnObject sentence;
-    private static IFoo instance;
+    IFoo instance;
     private static JvnServerImpl js;
 
     /**
      * main method create a JVN object nammed IRC for representing the Chat
      * application
-  *
+     *
      */
-   public static void main(String argv[]) {
-        try {
+    public static void main(String argv[]) {
 
-            // initialize JVN
-            js = JvnServerImpl.jvnGetServer();
-
-            // look up the IRC object in the JVN server
-            // if not found, create it, and register it in the JVN server
-            JvnObject jo = js.jvnLookupObject("IRC");
+        // initialize JVN
+        // 
+        // look up the IRC object in the JVN server
+        // if not found, create it, and register it in the JVN server
+        /* JvnObject jo = js.jvnLookupObject("IRC");
 
             if (jo == null) {
                 jo = js.jvnCreateObject((Serializable) new Sentence());
@@ -50,34 +47,21 @@ public class Irc implements IFoo{
                 js.jvnRegisterObject("IRC", jo);
             }
             // create the graphical part of the Chat application
-            new Irc(jo);
+         */
+        new Irc();
 
-        } catch (Exception e) {
-            System.out.println("IRC problem : " + e.getMessage());
-        }
     }
-    
-    
-    
-
 
     /**
      * IRC Constructor
      *
      * @param jo the JVN object representing the Chat
-   *
+     *
      */
-    public Irc(JvnObject jo) {
-
-
-        try {
-            if (instance == null) {
-                instance = (IFoo) TestingProxy.getNewProxy(this,
-                        IFoo.class);
-            }
-            
-            
-            sentence = jo;
+    public Irc() {
+            instance = (IFoo) JvnInvocationHandler.newInstance(new Sentence());
+            js = JvnServerImpl.jvnGetServer();
+            // sentence = jo;
             frame = new Frame();
             frame.setLayout(new GridLayout(1, 1));
             text = new TextArea(10, 60);
@@ -87,95 +71,72 @@ public class Irc implements IFoo{
             data = new TextField(40);
             frame.add(data);
             Button read_button = new Button("read");
-            read_button.addActionListener(new readListener(instance));
+            read_button.addActionListener(new readListener(this));
             frame.add(read_button);
             Button write_button = new Button("write");
-            write_button.addActionListener(new writeListener(instance));
+            write_button.addActionListener(new writeListener(this));
             frame.add(write_button);
             frame.setSize(545, 201);
             text.setBackground(Color.black);
             frame.setVisible(true);
-            frame.setTitle("Id Serveur Remote "+Irc.js.getIdServerRemote());
-            frame.addWindowListener( new WindowAdapter() {
+            frame.addWindowListener(new WindowAdapter() {
                 @Override
                 public void windowClosing(WindowEvent we) {
                     try {
-                        Irc.js.jvnTerminate();
+                       js.jvnTerminate();
                     } catch (JvnException ex) {
                         Logger.getLogger(Irc.class.getName()).log(Level.SEVERE, null, ex);
                     }
                     System.exit(0);
-                    
-                    
+
                 }
-            } );
-        } catch (RemoteException ex) {
-            Logger.getLogger(Irc.class.getName()).log(Level.SEVERE, null, ex);
-        }
+            });
     }
-
-    
-
-
-
-    
-    @AnnotationReader
-    public void x() {
-       //System.out.println("1 - Text in annotated method->Read"); 
-       
-       
-    }
-
-    @AnnotationWriter
-    public void y() {
- //System.out.println("2 - Text in annotated method->Writer");        
-
-    }
-
 
 }
- 
-
 
 /**
  * Internal class to manage user events (read) on the CHAT application
-  *
+ *
  */
 class readListener implements ActionListener {
 
-    IFoo irc;
+    Irc irc;
 
-    public readListener(IFoo i) {
+    public readListener(Irc i) {
         irc = i;
     }
 
     /**
      * Management of user events
-  *
+     *
      */
     public void actionPerformed(ActionEvent e) {
-        irc.x();
-        
-  }
+        String res = irc.instance.read();
+        irc.data.setText(res);
+        irc.text.append(res + "\n");
+
+    }
 }
 
 /**
  * Internal class to manage user events (write) on the CHAT application
-  *
+ *
  */
 class writeListener implements ActionListener {
 
-    IFoo irc;
+    Irc irc;
 
-    public writeListener(IFoo i) {
+    public writeListener(Irc i) {
         irc = i;
     }
 
     /**
      * Management of user events
-   *
+     *
      */
     public void actionPerformed(ActionEvent e) {
-        irc.y();
- }
+       
+        irc.instance.write(irc.data.getText());
+    }
 }

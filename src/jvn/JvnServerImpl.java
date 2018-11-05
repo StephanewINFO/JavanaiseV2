@@ -10,6 +10,7 @@ package jvn;
 import java.rmi.server.UnicastRemoteObject;
 
 import java.io.*;
+import java.rmi.ConnectException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
@@ -67,9 +68,7 @@ public class JvnServerImpl
         if (js == null) {
             try {
                 js = new JvnServerImpl();
-                jrc.jvnConnectServerRemote(js);
-               // js.showMessage(""+idServerLocal);
-                System.out.println("Server Local Connect id: " + js.getIdServerRemote());
+                System.out.println("Server Remote Connect id: " + js.getIdServerRemote());
                 
               
             } catch (Exception e) {
@@ -93,8 +92,17 @@ public class JvnServerImpl
     public void jvnTerminate()
             throws jvn.JvnException {
         try {
+            try{
             jrc.jvnTerminate(js);
-
+            }catch(ConnectException ce){
+                synchronized(this){
+                    try {
+                        wait();
+                    } catch (InterruptedException ex) {
+                        Logger.getLogger(JvnServerImpl.class.getName()).log(Level.SEVERE, null, ex);
+                    }
+                }
+            }
         } catch (RemoteException ex) {
             Logger.getLogger(JvnServerImpl.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -110,7 +118,14 @@ public class JvnServerImpl
     public JvnObject jvnCreateObject(Serializable o)
             throws jvn.JvnException {
         try {
-            int id = jrc.jvnGetObjectId();
+            Integer id =null;
+            try{
+            id = jrc.jvnGetObjectId();
+            }catch(ConnectException ce){
+                synchronized(this){
+                    wait();
+                }
+            }
             JvnObject jvnObject = new JvnObjectImpl(id, o);
             mapJvnObject.put(id, jvnObject);
             return jvnObject;
@@ -132,7 +147,17 @@ public class JvnServerImpl
     public void jvnRegisterObject(String jon, JvnObject jo)
             throws jvn.JvnException {
         try {
+            try{
             jrc.jvnRegisterObject(jon, jo, js);
+            }catch(ConnectException ce){
+                synchronized(this){
+                    try {
+                        wait();
+                    } catch (InterruptedException ex) {
+                        Logger.getLogger(JvnServerImpl.class.getName()).log(Level.SEVERE, null, ex);
+                    }
+                }
+            }
         } catch (RemoteException ex) {
             Logger.getLogger(JvnServerImpl.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -150,7 +175,17 @@ public class JvnServerImpl
             throws jvn.JvnException {
         JvnObject object = null;
         try {
+            try{
             object = jrc.jvnLookupObject(jon, js);
+            }catch(ConnectException ce){
+                synchronized(this){
+                    try {
+                        wait();
+                    } catch (InterruptedException ex) {
+                        Logger.getLogger(JvnServerImpl.class.getName()).log(Level.SEVERE, null, ex);
+                    }
+                }
+            }
             if (object != null) {
                 JvnObject newJvnObj = new JvnObjectImpl(object.jvnGetObjectId(), object.jvnGetObjectState());
                 mapJvnObject.put(newJvnObj.jvnGetObjectId(), newJvnObj);
@@ -179,7 +214,17 @@ public class JvnServerImpl
             throws JvnException {
         Serializable result = null;
         try {
+            try{
             result = jrc.jvnLockRead(joi, js);
+        }catch(ConnectException ce){
+                                try {
+                    synchronized(this){System.out.println("test");
+
+                    wait();}
+                } catch (InterruptedException ex) {
+                    Logger.getLogger(JvnServerImpl.class.getName()).log(Level.SEVERE, null, ex);
+                }
+        }
             if (result == null) {
                 result = mapJvnObject.get(joi).jvnGetObjectState();
             }
@@ -203,7 +248,17 @@ public class JvnServerImpl
             throws JvnException {
         Serializable result = null;
         try {
+            try{
             result = jrc.jvnLockWrite(joi, js);
+            }catch(ConnectException ce){
+                synchronized(this){
+                    try {
+                        wait();
+                    } catch (InterruptedException ex) {
+                        Logger.getLogger(JvnServerImpl.class.getName()).log(Level.SEVERE, null, ex);
+                    }
+                }
+            }
             if (result == null) {
                 result = mapJvnObject.get(joi).jvnGetObjectState();
             }
@@ -268,8 +323,11 @@ public class JvnServerImpl
     @Override
     public void coordReconect(JvnRemoteCoord coord) throws RemoteException {
         jrc=coord;
+        System.out.println("testcooord");
+synchronized(this){
+        notifyAll();
     }
-
+    }
   
 
 

@@ -25,11 +25,13 @@ public class JvnObjectImpl implements JvnObject {
         this.etatVerrou = States.NL;
     }
 
-    public void jvnLockRead() throws JvnException {
+    public  void jvnLockRead() throws JvnException {
 
         switch (this.etatVerrou) {
             case NL:
+                
                 obj = JvnServerImpl.jvnGetServer().jvnLockRead(joi);
+                
                 etatVerrou = States.R;
                 break;
 
@@ -43,7 +45,7 @@ public class JvnObjectImpl implements JvnObject {
         System.out.println("lock read: " + this.etatVerrou);
     }
 
-    public void jvnLockWrite() throws JvnException {
+    public  void jvnLockWrite() throws JvnException {
 
         switch (this.etatVerrou) {
             case WC:

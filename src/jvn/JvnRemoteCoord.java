@@ -85,8 +85,8 @@ public interface JvnRemoteCoord extends Remote {
     public void jvnTerminate(JvnRemoteServer js)
             throws java.rmi.RemoteException, JvnException;
 
-    public void jvnConnectServerRemote(JvnRemoteServer js)
-            throws java.rmi.RemoteException, JvnException;
+   
+   
 
     public File stockJvnServerRemoteObjet(Serializable jsStock, String nameFichier)
             throws java.rmi.RemoteException, JvnException;
@@ -96,6 +96,8 @@ public interface JvnRemoteCoord extends Remote {
     public void recuperateJvnConnectReadersWriters(String nomFichierReader, String nomFichierWriter) throws RemoteException;
 
     public void recuperateJvnObjects(String nomFichierReader, String nomFichierWriter) throws RemoteException;
+    
+   
     
     
 

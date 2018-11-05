@@ -7,6 +7,7 @@
 
 package jvn;
 import java.io.Serializable;
+import java.rmi.ConnectException;
 import java.rmi.RemoteException;
 
 /**
@@ -52,7 +53,7 @@ public interface JvnLocalServer {
 	* @throws  JvnException
 	**/
    public Serializable jvnLockRead(int joi)
-	 throws JvnException;
+	 throws JvnException, ConnectException ;
 
 	/**
 	* Get a Write lock on a JVN object 
