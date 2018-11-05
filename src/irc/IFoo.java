@@ -13,11 +13,11 @@ import Annotation.AnnotationWriter;
  * @author stephanie
  */
 public interface IFoo {
-    
+
     @AnnotationReader
     public String read();
-    
+
     @AnnotationWriter
-     public void write(String text);
-    
+    public void write(String text);
+
 }

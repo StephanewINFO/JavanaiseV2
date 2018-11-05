@@ -59,6 +59,7 @@ public class Irc {
      *
      */
     public Irc() {
+        try {
             instance = (IFoo) JvnInvocationHandler.newInstance(new Sentence());
             js = JvnServerImpl.jvnGetServer();
             // sentence = jo;
@@ -79,18 +80,23 @@ public class Irc {
             frame.setSize(545, 201);
             text.setBackground(Color.black);
             frame.setVisible(true);
+            
+            frame.setTitle("Id JvnServerremote: "+js.getIdServerRemote());
             frame.addWindowListener(new WindowAdapter() {
                 @Override
                 public void windowClosing(WindowEvent we) {
                     try {
-                       js.jvnTerminate();
+                        js.jvnTerminate();
                     } catch (JvnException ex) {
                         Logger.getLogger(Irc.class.getName()).log(Level.SEVERE, null, ex);
                     }
                     System.exit(0);
-
+                    
                 }
             });
+        } catch (RemoteException ex) {
+            Logger.getLogger(Irc.class.getName()).log(Level.SEVERE, null, ex);
+        }
     }
 
 }
@@ -136,7 +142,7 @@ class writeListener implements ActionListener {
      *
      */
     public void actionPerformed(ActionEvent e) {
-       
+
         irc.instance.write(irc.data.getText());
     }
 }

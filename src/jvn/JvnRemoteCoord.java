@@ -86,7 +86,6 @@ public interface JvnRemoteCoord extends Remote {
             throws java.rmi.RemoteException, JvnException;
 
    
-   
 
     public File stockJvnServerRemoteObjet(Serializable jsStock, String nameFichier)
             throws java.rmi.RemoteException, JvnException;

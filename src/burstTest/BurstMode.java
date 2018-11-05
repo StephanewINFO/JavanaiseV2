@@ -10,14 +10,13 @@ import irc.Irc;
 import irc.Sentence;
 import java.util.Random;
 
-
 /**
  *
  * @author stephanie
  */
 public class BurstMode {
 
-   IFoo instance;
+    IFoo instance;
 
     private BurstMode() {
         this.instance = (IFoo) jvn.JvnInvocationHandler.newInstance(new Sentence());
@@ -27,24 +26,22 @@ public class BurstMode {
 
         BurstMode bm = new BurstMode();
 
-        
-        
         Random random = new Random();
-        
-        while(true){
-        
-        int nombreR = random.nextInt(2);
 
-        switch (nombreR) {
-            case 0:
-                bm.instance.read();
-                break;
+        while (true) {
 
-            case 1:
-                bm.instance.write("test burst..");
-                break;
+            int nombreR = random.nextInt(2);
 
-        }
+            switch (nombreR) {
+                case 0:
+                    bm.instance.read();
+                    break;
+
+                case 1:
+                    bm.instance.write("test burst..");
+                    break;
+
+            }
         }
     }
 

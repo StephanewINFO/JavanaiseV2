@@ -12,7 +12,6 @@ public class JvnObjectImpl implements JvnObject {
 
     public int joi;
 
-
     enum States {
         NL, RC, WC, R, W, RWC
     }
@@ -25,13 +24,13 @@ public class JvnObjectImpl implements JvnObject {
         this.etatVerrou = States.NL;
     }
 
-    public  void jvnLockRead() throws JvnException {
+    public void jvnLockRead() throws JvnException {
 
         switch (this.etatVerrou) {
             case NL:
-                
+
                 obj = JvnServerImpl.jvnGetServer().jvnLockRead(joi);
-                
+
                 etatVerrou = States.R;
                 break;
 
@@ -45,7 +44,7 @@ public class JvnObjectImpl implements JvnObject {
         System.out.println("lock read: " + this.etatVerrou);
     }
 
-    public  void jvnLockWrite() throws JvnException {
+    public void jvnLockWrite() throws JvnException {
 
         switch (this.etatVerrou) {
             case WC:
@@ -78,7 +77,7 @@ public class JvnObjectImpl implements JvnObject {
                 break;
         }
         notifyAll();
-        
+
         System.out.println("unlock : " + this.etatVerrou);
 
     }
@@ -149,7 +148,7 @@ public class JvnObjectImpl implements JvnObject {
     }
 
     public synchronized Serializable jvnInvalidateWriterForReader() throws JvnException {
-        
+
         try {
             switch (etatVerrou) {
                 case RWC:
@@ -168,7 +167,7 @@ public class JvnObjectImpl implements JvnObject {
         System.out.println("invalidated writer for reader : " + this.etatVerrou);
         return obj;
     }
-    
+
     @Override
     public void jvnSetObjectState(Serializable object) {
         this.obj = object;
